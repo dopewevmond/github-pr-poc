@@ -21,8 +21,8 @@ echo "📋 Response:"
 echo "$response" | python3 -m json.tool 2>/dev/null || echo "$response"
 echo ""
 
-# Check if successful
-if echo "$response" | grep -q '"success": true'; then
+# Check if successful (using grep -E for regex to handle optional whitespace)
+if echo "$response" | grep -qE '"success":\s*true'; then
     echo "✅ Success! Pull request created."
     
     # Extract and display the PR URL
