@@ -2,6 +2,49 @@ import { NextResponse } from "next/server"
 import { Octokit } from "@octokit/rest"
 import { getInstallationAccessToken } from "@/lib/github-app"
 
+/**
+ * Checks if a webhook exists for the given domain and creates one if it doesn't
+ */
+async function ensureWebhookExists(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  baseUrl: string
+) {
+  const webhookUrl = `https://${baseUrl}/api/webhook`
+
+  // Get all webhooks for the repository
+  const { data: hooks } = await octokit.rest.repos.listWebhooks({
+    owner,
+    repo,
+  })
+
+  // Check if a webhook already exists for this domain
+  const existingHook = hooks.find((hook) => hook.config.url === webhookUrl)
+
+  if (existingHook) {
+    console.log(`Webhook already exists for ${webhookUrl}`)
+    return existingHook
+  }
+
+  // Create a new webhook
+  console.log(`Creating webhook for ${webhookUrl}`)
+  const { data: newHook } = await octokit.rest.repos.createWebhook({
+    owner,
+    repo,
+    config: {
+      url: webhookUrl,
+      content_type: "json",
+      insecure_ssl: "0",
+    },
+    events: ["pull_request"],
+    active: true,
+  })
+
+  console.log(`Webhook created successfully with ID: ${newHook.id}`)
+  return newHook
+}
+
 // Hardcoded configuration
 const REPO_OWNER = "dopewevmond" // Replace with your GitHub username or org
 const REPO_NAME = "hackable" // Replace with your repository name
@@ -14,6 +57,7 @@ const COMMIT_MESSAGE = "Add example file via API"
 const PR_TITLE = "Automated PR: Add example file"
 const PR_BODY =
   "This pull request was automatically created using the GitHub REST API and a GitHub App for authentication."
+const WEBHOOK_BASE_URL = "magical-fly-sensibly.ngrok-free.app"
 
 export async function POST() {
   try {
@@ -24,6 +68,9 @@ export async function POST() {
     const octokit = new Octokit({
       auth: token,
     })
+
+    // Check and create webhook if needed
+    await ensureWebhookExists(octokit, REPO_OWNER, REPO_NAME, WEBHOOK_BASE_URL)
 
     // Step 1: Get the reference to the base branch (main)
     const { data: refData } = await octokit.rest.git.getRef({
