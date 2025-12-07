@@ -58,6 +58,9 @@ export const azureDevOps = {
     eventType: string = "git.pullrequest.created"
   ) {
     const client = getAzureDevOpsClient()
+    const webhookUsername = process.env.AZURE_WEBHOOK_USERNAME || "webhook"
+    const webhookPassword = process.env.AZURE_WEBHOOK_PASSWORD
+
     const response = await client.post(
       `/_apis/hooks/subscriptions?api-version=7.1`,
       {
@@ -72,6 +75,10 @@ export const azureDevOps = {
         },
         consumerInputs: {
           url: webhookUrl,
+          ...(webhookPassword && {
+            basicAuthUsername: webhookUsername,
+            basicAuthPassword: webhookPassword,
+          }),
         },
       }
     )

@@ -12,6 +12,13 @@ async function ensureWebhookExists(
   baseUrl: string
 ) {
   const webhookUrl = `https://${baseUrl}/api/webhook`
+  const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET
+
+  if (!webhookSecret) {
+    console.warn(
+      "GITHUB_WEBHOOK_SECRET not set - webhook will be created without signature verification"
+    )
+  }
 
   // Get all webhooks for the repository
   const { data: hooks } = await octokit.rest.repos.listWebhooks({
@@ -36,6 +43,7 @@ async function ensureWebhookExists(
       url: webhookUrl,
       content_type: "json",
       insecure_ssl: "0",
+      ...(webhookSecret && { secret: webhookSecret }),
     },
     events: ["pull_request"],
     active: true,

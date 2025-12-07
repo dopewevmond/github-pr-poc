@@ -1,7 +1,42 @@
 import { NextRequest, NextResponse } from "next/server"
 
+const AZURE_WEBHOOK_USERNAME = process.env.AZURE_WEBHOOK_USERNAME
+const AZURE_WEBHOOK_PASSWORD = process.env.AZURE_WEBHOOK_PASSWORD
+
+/**
+ * Verify Azure DevOps webhook basic auth
+ */
+function verifyAzureAuth(request: NextRequest): boolean {
+  if (!AZURE_WEBHOOK_USERNAME || !AZURE_WEBHOOK_PASSWORD) {
+    console.warn("Azure webhook auth not configured - skipping verification")
+    return true // Allow if no auth is configured
+  }
+
+  const authHeader = request.headers.get("authorization")
+  if (!authHeader || !authHeader.startsWith("Basic ")) {
+    return false
+  }
+
+  const base64Credentials = authHeader.slice(6)
+  const credentials = Buffer.from(base64Credentials, "base64").toString("utf-8")
+  const [username, password] = credentials.split(":")
+
+  return (
+    username === AZURE_WEBHOOK_USERNAME && password === AZURE_WEBHOOK_PASSWORD
+  )
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Verify basic auth
+    if (!verifyAzureAuth(request)) {
+      console.error("Invalid Azure DevOps webhook authentication")
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
     // Parse the webhook payload
     const payload = await request.json()
 

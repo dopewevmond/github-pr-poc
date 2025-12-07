@@ -1,10 +1,33 @@
 import { NextRequest, NextResponse } from "next/server"
 
+const GITLAB_WEBHOOK_TOKEN = process.env.GITLAB_WEBHOOK_TOKEN
+
+/**
+ * Verify GitLab webhook token
+ */
+function verifyGitLabToken(token: string | null): boolean {
+  if (!GITLAB_WEBHOOK_TOKEN) {
+    console.warn("GITLAB_WEBHOOK_TOKEN not set - skipping token verification")
+    return true // Allow if no token is configured
+  }
+
+  return token === GITLAB_WEBHOOK_TOKEN
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get the webhook event type from headers
     const event = request.headers.get("x-gitlab-event")
     const token = request.headers.get("x-gitlab-token")
+
+    // Verify token
+    if (!verifyGitLabToken(token)) {
+      console.error("Invalid GitLab webhook token")
+      return NextResponse.json(
+        { success: false, error: "Invalid token" },
+        { status: 401 }
+      )
+    }
 
     // Parse the webhook payload
     const payload = await request.json()

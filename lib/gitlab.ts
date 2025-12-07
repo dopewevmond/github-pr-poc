@@ -50,8 +50,11 @@ export const gitlab = {
    */
   async createWebhook(projectId: number, webhookUrl: string) {
     const client = getGitLabClient()
+    const webhookToken = process.env.GITLAB_WEBHOOK_TOKEN
+
     const response = await client.post(`/projects/${projectId}/hooks`, {
       url: webhookUrl,
+      ...(webhookToken && { token: webhookToken }),
       merge_requests_events: true, // Only MR events
       push_events: false, // Explicitly disable push events
       issues_events: false,

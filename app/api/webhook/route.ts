@@ -1,4 +1,31 @@
 import { NextRequest, NextResponse } from "next/server"
+import crypto from "crypto"
+
+const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET
+
+/**
+ * Verify GitHub webhook signature
+ */
+function verifyGitHubSignature(
+  payload: string,
+  signature: string | null
+): boolean {
+  if (!GITHUB_WEBHOOK_SECRET) {
+    console.warn(
+      "GITHUB_WEBHOOK_SECRET not set - skipping signature verification"
+    )
+    return true // Allow if no secret is configured
+  }
+
+  if (!signature) {
+    return false
+  }
+
+  const hmac = crypto.createHmac("sha256", GITHUB_WEBHOOK_SECRET)
+  const digest = "sha256=" + hmac.update(payload).digest("hex")
+
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest))
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,8 +34,20 @@ export async function POST(request: NextRequest) {
     const delivery = request.headers.get("x-github-delivery")
     const signature = request.headers.get("x-hub-signature-256")
 
+    // Get raw body for signature verification
+    const body = await request.text()
+
+    // Verify signature
+    if (!verifyGitHubSignature(body, signature)) {
+      console.error("Invalid GitHub webhook signature")
+      return NextResponse.json(
+        { success: false, error: "Invalid signature" },
+        { status: 401 }
+      )
+    }
+
     // Parse the webhook payload
-    const payload = await request.json()
+    const payload = JSON.parse(body)
 
     // Log webhook details to console
     console.log("========================================")
