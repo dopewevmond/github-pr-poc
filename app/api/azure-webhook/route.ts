@@ -52,6 +52,13 @@ export async function POST(request: NextRequest) {
     console.log("Resource Type:", payload.resourceVersion)
     console.log("Timestamp:", new Date().toISOString())
     console.log("----------------------------------------")
+    console.log("Headers:")
+    const headers: Record<string, string> = {}
+    request.headers.forEach((value, key) => {
+      headers[key] = value
+    })
+    console.log(JSON.stringify(headers, null, 2))
+    console.log("----------------------------------------")
     console.log("Payload:")
     console.log(JSON.stringify(payload, null, 2))
     console.log("========================================")
