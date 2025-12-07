@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       JSON.stringify(
         {
           pr_status: payload?.pull_request?.state,
-          url: payload?.pull_request?.url,
+          url: payload?.pull_request?.html_url,
         },
         null,
         2
