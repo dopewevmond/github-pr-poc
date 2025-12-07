@@ -57,7 +57,6 @@ async function ensureWebhookExists(
 const REPO_OWNER = "dopewevmond" // Replace with your GitHub username or org
 const REPO_NAME = "hackable" // Replace with your repository name
 const BASE_BRANCH = "master"
-const NEW_BRANCH = `feature/auto-pr-${Date.now()}`
 const FILE_PATH = "example.txt"
 const FILE_CONTENT =
   "This is an automatically generated file created by the GitHub PR POC."
@@ -69,6 +68,9 @@ const WEBHOOK_BASE_URL = "magical-fly-sensibly.ngrok-free.app"
 
 export async function POST() {
   try {
+    // Generate a unique branch name for each request
+    const NEW_BRANCH = `feature/auto-pr-${Date.now()}`
+
     // Get installation access token
     const token = await getInstallationAccessToken()
 
